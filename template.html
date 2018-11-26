@@ -1,0 +1,47 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      font-family: Sans-serif;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    td {
+      height: 80px;
+    }
+    th {
+      height: 40px;
+    }
+  </style>
+</head>
+
+<body>
+    <p>
+      Nadawca:<br>
+      Andrzej Bobrowski - Sklep Kolekcjonerski<br>
+      ul. Małopolska 58<br>
+      70-513 Szczecin<br>
+      POLSKA
+    </p>
+    <table>
+      <tr>
+        <th style="width: 2%;">Lp.</th>
+        <th style="width: 20%;">Adresat</th>
+        <th style="width: 30%;">Dokładne miejsce doręczenia</th>
+        <th style="width: 6%;">Masa</th>
+        <th style="width: 30%;">Nr nadawczy</th>
+        <th style="width: 6%;">Uwagi</th>
+        <th style="width: 6%;">Opłata</th>
+      </tr>
+      {{ROWS}}
+</body>
+
+</html>
