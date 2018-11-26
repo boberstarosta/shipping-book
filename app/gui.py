@@ -124,6 +124,13 @@ class MainWindow(tk.Tk):
         self.selected_index = None
 
     def add(self):
+        if len(self.addresses) > 11:
+            messagebox.showinfo(
+                title="Za dużo adresów.",
+                message=("Na stronie zmieści się maksymalnie 11 adresów\n"
+                         "Zacznij od nowa żeby dodać kolejne.")
+            )
+            return
         dialog = TextDialog(self, title="Dodaj adres")
         if dialog.result == "ok":
             self.addresses.append(dialog.text)
