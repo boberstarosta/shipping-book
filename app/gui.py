@@ -77,9 +77,24 @@ class MainWindow(tk.Tk):
         btn_frame = tk.Frame(self)
         btn_frame.pack(side=tk.TOP, fill=tk.X)
 
-        btn = tk.Button(btn_frame, text="Dodaj adres",
+        btn = tk.Button(btn_frame, text="Dodaj",
                         command=self.add)
-        btn.pack(fill=tk.X)
+        btn.pack(side=tk.TOP, fill=tk.X)
+
+        frame = tk.Frame(btn_frame)
+        frame.pack(side=tk.TOP, fill=tk.X)
+
+        self.btn_delete = tk.Button(frame, text="Usuń", state=tk.DISABLED,
+                                    command=self.delete)
+        self.btn_delete.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.btn_up = tk.Button(frame, text="W górę", state=tk.DISABLED,
+                                command=self.move_up)
+        self.btn_up.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.btn_down = tk.Button(frame, text="W dół", state=tk.DISABLED,
+                                  command=self.move_down)
+        self.btn_down.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         btn = tk.Button(btn_frame, text="Wyczyść listę adresów",
                         command=self.clear_addresses)
@@ -104,6 +119,9 @@ class MainWindow(tk.Tk):
 
         vscrollbar.config(command=self.listbox.yview)
         self.listbox.config(yscrollcommand=vscrollbar.set)
+        self.listbox.bind("<<ListboxSelect>>", self.on_selection_changed)
+
+        self.selected_index = None
 
     def add(self):
         dialog = TextDialog(self, title="Dodaj adres")
@@ -112,9 +130,48 @@ class MainWindow(tk.Tk):
             text_row = dialog.text.replace("\n", "  ")
             self.listbox.insert(tk.END, text_row)
 
+    def delete(self):
+        self.listbox.delete(self.selected_index)
+        del self.addresses[self.selected_index]
+        self.selected_index = None
+        self.listbox.select_clear(0, tk.END)
+        self.btn_delete.config(state=tk.DISABLED)
+        self.btn_up.config(state=tk.DISABLED)
+        self.btn_down.config(state=tk.DISABLED)
+
+    def move_up(self):
+        if self.selected_index:
+            i, j = self.selected_index, self.selected_index - 1
+            self.addresses[i], self.addresses[j] = \
+                self.addresses[j], self.addresses[i]
+            text = self.listbox.get(self.selected_index)
+            self.listbox.delete(self.selected_index)
+            self.listbox.insert(self.selected_index - 1, text)
+            self.listbox.select_set(self.selected_index - 1)
+            self.listbox.activate(self.selected_index - 1)
+            self.on_selection_changed(None)
+
+    def move_down(self):
+        if (
+            self.selected_index is not None
+            and self.selected_index < len(self.addresses) - 1
+        ):
+            i, j = self.selected_index, self.selected_index + 1
+            self.addresses[i], self.addresses[j] = \
+                self.addresses[j], self.addresses[i]
+            text = self.listbox.get(self.selected_index)
+            self.listbox.delete(self.selected_index)
+            self.listbox.insert(self.selected_index + 1, text)
+            self.listbox.select_set(self.selected_index + 1)
+            self.listbox.activate(self.selected_index + 1)
+            self.on_selection_changed(None)
+
     def clear(self):
         self.addresses.clear()
         self.listbox.delete(0, tk.END)
+        self.btn_delete.config(state=tk.DISABLED)
+        self.btn_up.config(state=tk.DISABLED)
+        self.btn_down.config(state=tk.DISABLED)
 
     def create_pdf(self):
         if self.addresses:
@@ -126,3 +183,19 @@ class MainWindow(tk.Tk):
             message="Na pewno skasować wszystkie adresy z listy?"
         ):
             self.clear()
+
+    def on_selection_changed(self, event):
+        if self.addresses:
+            self.selected_index = int(self.listbox.curselection()[0])
+            self.btn_delete.config(state=tk.NORMAL)
+            if self.selected_index is not None and self.selected_index > 0:
+                self.btn_up.config(state=tk.NORMAL)
+            else:
+                self.btn_up.config(state=tk.DISABLED)
+            if (
+                self.selected_index is not None
+                and self.selected_index < len(self.addresses) - 1
+            ):
+                self.btn_down.config(state=tk.NORMAL)
+            else:
+                self.btn_down.config(state=tk.DISABLED)
