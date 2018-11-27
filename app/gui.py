@@ -8,7 +8,8 @@ from app.clipboard import ClipboardWatcher
 
 
 class TextDialog(tk.Toplevel):
-    def __init__(self, parent, text=None, title="Text dialog", width=80, height=10):
+    def __init__(self, parent, text=None, title="Text dialog",
+                 width=80, height=10):
         super().__init__(parent)
 
         self.result = None
