@@ -3,10 +3,11 @@ import tkinter as tk
 from tkinter import messagebox
 
 from app.pdf import write_and_open_addresses_pdf
+from app.clipboard import ClipboardWatcher
 
 
 class TextDialog(tk.Toplevel):
-    def __init__(self, parent, title="Text dialog", width=80, height=10):
+    def __init__(self, parent, text=None, title="Text dialog", width=80, height=10):
         super().__init__(parent)
 
         self.result = None
@@ -16,6 +17,8 @@ class TextDialog(tk.Toplevel):
         self.title(title)
 
         self.add_widgets(width, height)
+        if text is not None:
+            self.textbox.insert("1.0", text)
 
         self.grab_set()
         self.wait_window(self)
@@ -51,7 +54,7 @@ class TextDialog(tk.Toplevel):
         btn_cancel = tk.Button(btn_frame, text="Anuluj", command=self.cancel)
         btn_cancel.pack(side=tk.RIGHT, fill=tk.X, expand=True)
 
-        btn_ok = tk.Button(btn_frame, text="Dodaj", command=self.ok)
+        btn_ok = tk.Button(btn_frame, text="Zapisz", command=self.ok)
         btn_ok.pack(side=tk.RIGHT, fill=tk.X, expand=True)
 
     def validate(self):
@@ -84,12 +87,23 @@ class MainWindow(tk.Tk):
                         command=self.add)
         btn.pack(side=tk.TOP, fill=tk.X)
 
+        self.var_auto = tk.IntVar()
+        checkbox = tk.Checkbutton(btn_frame, 
+            text="Automatycznie dodawaj skopiowane adresy",
+            variable=self.var_auto)
+        checkbox.pack()
+        self.var_auto.trace("w", lambda *_: self.on_auto_changed())
+
         frame = tk.Frame(btn_frame)
         frame.pack(side=tk.TOP, fill=tk.X)
 
         self.btn_delete = tk.Button(frame, text="Usuń", state=tk.DISABLED,
                                     command=self.delete)
         self.btn_delete.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.btn_edit = tk.Button(frame, text="Edytuj", state=tk.DISABLED,
+                                    command=self.edit)
+        self.btn_edit.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         self.btn_up = tk.Button(frame, text="W górę", state=tk.DISABLED,
                                 command=self.move_up)
@@ -126,6 +140,14 @@ class MainWindow(tk.Tk):
 
         self.selected_index = None
 
+    def on_auto_changed(self):
+        if self.var_auto.get():
+            self.clipboard_watcher = ClipboardWatcher(self.add_address)
+            self.clipboard_watcher.start()
+        else:
+            self.clipboard_watcher.stop()
+            self.clipboard_watcher = None
+
     def set_icon(self, icon_file_name):
         icon_file = pathlib.Path.cwd() / pathlib.Path(icon_file_name)
         if icon_file.exists():
@@ -146,9 +168,12 @@ class MainWindow(tk.Tk):
             return
         dialog = TextDialog(self, title="Dodaj adres")
         if dialog.result == "ok":
-            self.addresses.append(dialog.text)
-            text_row = dialog.text.replace("\n", "  ")
-            self.listbox.insert(tk.END, text_row)
+            self.add_address(dialog.text)
+
+    def add_address(self, address):
+        self.addresses.append(address)
+        text_row = address.replace("\n", "  ")
+        self.listbox.insert(tk.END, text_row)
 
     def delete(self):
         self.listbox.delete(self.selected_index)
@@ -156,8 +181,20 @@ class MainWindow(tk.Tk):
         self.selected_index = None
         self.listbox.select_clear(0, tk.END)
         self.btn_delete.config(state=tk.DISABLED)
+        self.btn_edit.config(state=tk.DISABLED)
         self.btn_up.config(state=tk.DISABLED)
         self.btn_down.config(state=tk.DISABLED)
+
+    def edit(self):
+        dialog = TextDialog(self, title="Edytuj adres",
+                            text=self.addresses[self.selected_index])
+        if dialog.result == "ok":
+            self.addresses[self.selected_index] = dialog.text
+            text_row = dialog.text.replace("\n", "  ")
+            self.listbox.delete(self.selected_index)
+            self.listbox.insert(self.selected_index, text_row)
+            self.listbox.select_set(self.selected_index)
+            self.listbox.activate(self.selected_index)
 
     def move_up(self):
         if self.selected_index:
@@ -190,6 +227,7 @@ class MainWindow(tk.Tk):
         self.addresses.clear()
         self.listbox.delete(0, tk.END)
         self.btn_delete.config(state=tk.DISABLED)
+        self.btn_edit.config(state=tk.DISABLED)
         self.btn_up.config(state=tk.DISABLED)
         self.btn_down.config(state=tk.DISABLED)
 
@@ -208,6 +246,7 @@ class MainWindow(tk.Tk):
         if self.addresses:
             self.selected_index = int(self.listbox.curselection()[0])
             self.btn_delete.config(state=tk.NORMAL)
+            self.btn_edit.config(state=tk.NORMAL)
             if self.selected_index is not None and self.selected_index > 0:
                 self.btn_up.config(state=tk.NORMAL)
             else:
@@ -219,3 +258,4 @@ class MainWindow(tk.Tk):
                 self.btn_down.config(state=tk.NORMAL)
             else:
                 self.btn_down.config(state=tk.DISABLED)
+
