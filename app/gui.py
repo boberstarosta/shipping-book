@@ -1,4 +1,5 @@
 import pathlib
+import pickle
 import tkinter as tk
 from tkinter import messagebox
 
@@ -80,6 +81,9 @@ class MainWindow(tk.Tk):
         self.geometry("600x600+600+200")
         self.minsize(600, 600)
 
+        self.addresses = []
+        self.selected_index = None
+
         btn_frame = tk.Frame(self)
         btn_frame.pack(side=tk.TOP, fill=tk.X)
 
@@ -121,8 +125,6 @@ class MainWindow(tk.Tk):
                         command=self.create_pdf)
         btn.pack(fill=tk.X)
 
-        self.addresses = []
-
         outer_frame = tk.Frame(self)
         outer_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         outer_frame.grid_columnconfigure(0, weight=1)
@@ -138,7 +140,27 @@ class MainWindow(tk.Tk):
         self.listbox.config(yscrollcommand=vscrollbar.set)
         self.listbox.bind("<<ListboxSelect>>", self.on_selection_changed)
 
-        self.selected_index = None
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        self.load_from_file()
+
+    def load_from_file(self):
+        path = pathlib.Path.cwd() / pathlib.Path("data")
+        if not path.exists():
+            return
+
+        with path.open("rb") as data_file:
+            try:
+                data = pickle.load(data_file)
+                for address in data:
+                    self.add_address(address)
+            except (IOError, EOFError):
+                return
+
+    def save_to_file(self):
+        path = pathlib.Path.cwd() / pathlib.Path("data")
+        with path.open(mode="wb") as data_file:
+            pickle.dump(self.addresses, data_file)
 
     def on_auto_changed(self):
         if self.var_auto.get():
@@ -258,4 +280,8 @@ class MainWindow(tk.Tk):
                 self.btn_down.config(state=tk.NORMAL)
             else:
                 self.btn_down.config(state=tk.DISABLED)
+
+    def on_closing(self):
+        self.save_to_file()
+        self.destroy()
 
