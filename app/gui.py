@@ -1,3 +1,4 @@
+import pathlib
 import tkinter as tk
 from tkinter import messagebox
 
@@ -70,7 +71,9 @@ class TextDialog(tk.Toplevel):
 class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
+
         self.title("Książka Nadawcza")
+        self.set_icon("icon.png")
         self.geometry("600x600+600+200")
         self.minsize(600, 600)
 
@@ -122,6 +125,16 @@ class MainWindow(tk.Tk):
         self.listbox.bind("<<ListboxSelect>>", self.on_selection_changed)
 
         self.selected_index = None
+
+    def set_icon(self, icon_file_name):
+        icon_file = pathlib.Path.cwd() / pathlib.Path(icon_file_name)
+        if icon_file.exists():
+            try:
+                img = tk.PhotoImage(file=icon_file)
+            except tk.TclError:
+                pass
+            else:
+                self.tk.call("wm", "iconphoto", self._w, img)
 
     def add(self):
         if len(self.addresses) > 11:
