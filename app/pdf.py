@@ -53,6 +53,7 @@ def write_and_open_addresses_pdf(addresses):
     print("Writing file {}".format(pdf_file_name))
 
     html = generate_html(addresses)
+
     pdfkit.from_string(html, pdf_file_name)
 
     if os.name == 'nt':  # For Windows
